@@ -1,4 +1,4 @@
-# Checkpoint 2 — Contador automático de tampinhas (modo estável)
+# Checkpoint 2 — Contador automático de tampinhas
 
 **FIAP — Applied Computer Vision ·**
 
