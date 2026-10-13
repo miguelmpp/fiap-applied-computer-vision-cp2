@@ -47,9 +47,4 @@ O número **esperado = 5** é usado apenas para comparar as contagens, jamais pa
 - `js/script-opencv-original.js` — cópia da versão antiga, **não carregada**.
 - `img/foto1.jpg` a `img/foto5.jpg` — fotos reais, 5 tampinhas cada.
 
-## Antes de entregar
-
-- [x] Cinco tampinhas identificadas em cada uma das cinco imagens nas capturas de tela do navegador fornecidas pelo grupo.
-- [x] Retângulos sobre as cinco tampinhas visualmente conferidos nas capturas de tela fornecidas pelo grupo.
-- [x] Nomes completos e RMs de **todos os cinco integrantes** preenchidos no `index.html`.
 
