@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Checkpoint 2 — Contador automático de elementos com JavaScript, Canvas e visão computacional clássica">
+  <title>Checkpoint 2 | Contador de Elementos</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script defer src="js/script.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <a class="brand" href="#inicio" aria-label="Ir ao início"><span class="brand-mark">FIAP</span><span class="brand-divider"></span><span>APPLIED COMPUTER VISION</span></a>
+      <span class="topbar-tag">CHECKPOINT 02</span>
+    </div>
+  </header>
+  <main id="inicio" class="shell">
+    <section class="hero" aria-labelledby="titulo">
+      <div class="eyebrow"><span class="eyebrow-line"></span> VISÃO COMPUTACIONAL · PROJETO INTEGRADOR</div>
+      <h1 id="titulo">Contador de <em>elementos.</em></h1>
+      <p>Conte objetos automaticamente em cinco fotografias e acompanhe cada etapa do processamento: cores, suavização, segmentação, componentes conexos e bordas.</p>
+      <div class="hero-status"><span class="live-dot" id="cvDot"></span><span id="cvStatus" role="status" aria-live="polite">Inicializando processador local…</span></div>
+    </section>
+
+    <section class="panel settings" aria-labelledby="titulo-config">
+      <div class="section-header"><div><span class="section-kicker">01 / CONFIGURAÇÃO</span><h2 id="titulo-config">Prepare o experimento</h2></div><span class="small-note">As contagens vêm do processamento real dos pixels.</span></div>
+      <div class="settings-grid">
+        <label class="field"><span>Objeto escolhido</span><input type="text" id="nomeObjeto" value="tampinhas" maxlength="40" placeholder="Ex.: tampinhas ou moedas"></label>
+        <label class="field"><span>Modo de segmentação</span>
+          <select id="modo">
+            <option value="adaptive" selected>Adaptativo — recomendado para estas fotos</option>
+            <option value="otsu">Otsu global — comparação</option>
+            <option value="saturation">HSV / saturação — somente coloridas</option>
+          </select>
+        </label>
+        <label class="field"><span>Área mínima <strong id="areaValor">0,70%</strong></span><input id="areaMinima" type="range" min="0.10" max="3.00" step="0.05" value="0.70"><small>Descarta componentes menores que essa porcentagem da área da foto.</small></label>
+        <label class="field"><span>Filtro de formato</span><select id="formato"><option value="round">Arredondado (recomendado)</option><option value="all">Qualquer formato</option></select></label>
+        <label class="field"><span>Janela adaptativa <strong id="janelaValor">151 px</strong></span><input id="janela" type="range" min="101" max="251" step="50" value="151"><small>Janela local para lidar com sombras e iluminação desigual.</small></label>
+        <label class="field"><span>Sensibilidade do limiar <strong id="limiarValor">20</strong></span><input id="limiar" type="range" min="5" max="40" step="5" value="20"><small>O valor C usado no threshold adaptativo.</small></label>
+      </div>
+      <div class="info-note"><strong>Importante:</strong> a quantidade <em>esperada</em> é usada apenas para conferir o acerto. Ela nunca entra no cálculo do algoritmo. Alterar os ajustes exige reprocessar as fotos.</div>
+    </section>
+
+    <section class="panel photos" aria-labelledby="titulo-fotos">
+      <div class="section-header"><div><span class="section-kicker">02 / FOTOGRAFIAS</span><h2 id="titulo-fotos">Cinco posições, um algoritmo</h2></div><span class="count-pill" id="photoCount">0 / 5 fotos</span></div>
+      <div class="photo-toolbar">
+        <div><strong>Coloque os arquivos em <code>img/foto1.jpg</code> até <code>img/foto5.jpg</code></strong><p>Ao abrir com Live Server, eles são carregados automaticamente. Para testes, você também pode selecionar até cinco imagens do computador.</p></div>
+        <label class="upload-button" for="filesInput"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 16v4h16v-4"/></svg> Selecionar fotos</label>
+        <input id="filesInput" type="file" accept="image/*" multiple hidden>
+      </div>
+      <div class="photo-grid" id="photoGrid" aria-label="Fotografias do experimento"></div>
+      <div class="action-row"><button type="button" id="btnProcessar" class="primary-button" disabled>Carregue as fotografias</button><p id="runStatus" role="status" aria-live="polite">Aguardando imagens.</p></div>
+      <div class="summary" id="summary" hidden><div><small>TOTAL IDENTIFICADO</small><strong id="totalDetected">—</strong></div><div><small>FOTOGRAFIAS ANALISADAS</small><strong id="totalAnalyzed">—</strong></div><div><small>ACERTOS VERIFICADOS</small><strong id="totalCorrect">—</strong></div></div>
+    </section>
+
+    <section class="panel steps" aria-labelledby="titulo-etapas">
+      <div class="section-header"><div><span class="section-kicker">03 / PROCESSAMENTO</span><h2 id="titulo-etapas">Etapa por etapa</h2></div><span class="count-pill" id="selectedPhoto">Foto 01</span></div>
+      <div class="result-strip" id="resultStrip"><div><small>ELEMENTOS IDENTIFICADOS</small><strong id="selectedCount">—</strong></div><p id="selectedDescription">Selecione uma fotografia e clique em processar para visualizar as etapas.</p></div>
+      <div class="stage-grid" id="stageGrid">
+        <article class="stage-card"><div class="stage-heading"><span>01</span><h3>Original</h3></div><div class="stage-media"><img id="stageOriginal" alt="Imagem original" hidden><span class="stage-placeholder">Aguardando imagem</span></div><p>Imagem carregada via Canvas — <code>getImageData()</code>.</p></article>
+        <article class="stage-card"><div class="stage-heading"><span>02</span><h3>Escala de cinza</h3></div><div class="stage-media"><img id="stageGray" alt="Imagem em escala de cinza" hidden><span class="stage-placeholder">Aguardando processamento</span></div><p>Conversão RGB → cinza (equivalente a <code>cv.cvtColor()</code>).</p></article>
+        <article class="stage-card"><div class="stage-heading"><span>03</span><h3>Suavização</h3></div><div class="stage-media"><img id="stageBlur" alt="Imagem suavizada" hidden><span class="stage-placeholder">Aguardando processamento</span></div><p>Suavização com kernel gaussiano 5×5 (equivalente a <code>cv.GaussianBlur()</code>).</p></article>
+        <article class="stage-card"><div class="stage-heading"><span>04</span><h3>Saturação HSV</h3></div><div class="stage-media"><img id="stageSaturation" alt="Canal de saturação HSV" hidden><span class="stage-placeholder">Aguardando processamento</span></div><p>Canal S calculado de RGB → HSV (equivalente a <code>cv.cvtColor</code> e <code>cv.split</code>).</p></article>
+        <article class="stage-card"><div class="stage-heading"><span>05</span><h3>Binarização</h3></div><div class="stage-media"><img id="stageBinary" alt="Imagem binária" hidden><span class="stage-placeholder">Aguardando processamento</span></div><p>Limiarização adaptativa, Otsu ou HSV (equivalentes em JavaScript).</p></article>
+        <article class="stage-card"><div class="stage-heading"><span>06</span><h3>Máscara tratada</h3></div><div class="stage-media"><img id="stageClean" alt="Máscara binária tratada" hidden><span class="stage-placeholder">Aguardando processamento</span></div><p>Remoção de ruído e preenchimento de pequenos vazios — morfologia.</p></article>
+        <article class="stage-card"><div class="stage-heading"><span>07</span><h3>Bordas (Sobel)</h3></div><div class="stage-media"><img id="stageCanny" alt="Bordas indicadas pelo gradiente Sobel" hidden><span class="stage-placeholder">Aguardando processamento</span></div><p>Mapa de gradiente tipo Sobel (Aula 07; não entra na contagem).</p></article>
+        <article class="stage-card"><div class="stage-heading"><span>08</span><h3>Máscara aplicada (AND)</h3></div><div class="stage-media"><img id="stageMasked" alt="Imagem com apenas as tampinhas isoladas" hidden><span class="stage-placeholder">Aguardando processamento</span></div><p>Isolamento dos objetos — AND lógico com a máscara.</p></article>
+        <article class="stage-card final-stage"><div class="stage-heading"><span>09</span><h3>Contagem / objetos</h3></div><div class="stage-media"><img id="stageFinal" alt="Objetos com retângulos e identificadores" hidden><span class="stage-placeholder">Aguardando processamento</span></div><p>Componentes conexos, filtragem por área e caixas delimitadoras.</p></article>
+      </div>
+    </section>
+
+    <section class="panel method" aria-labelledby="titulo-metodo"><div class="section-header"><div><span class="section-kicker">04 / METODOLOGIA</span><h2 id="titulo-metodo">Como a contagem funciona?</h2></div></div><p>O software converte a fotografia em cinza, aplica suavização gaussiana e uma limiarização adaptativa que considera a iluminação local. Esta versão utiliza operações JavaScript puras sobre os pixels via Canvas, sem depender do carregamento do OpenCV.js. Em seguida, limpa a máscara, identifica componentes conexos, aplica filtros de área e forma e marca as tampinhas. A tela também demonstra HSV, gradiente Sobel e operações lógicas estudados em aula. O fundo (rótulo 0) não é contado. As configurações são iguais para todas as fotos de cada execução.</p><p><strong>Limitações conhecidas:</strong> objetos sobrepostos ou encostados, sombras grandes, reflexos e iluminação irregular podem prejudicar a segmentação. Um resultado “correto” na comparação numérica não substitui a conferência visual dos retângulos.</p></section>
+
+    <section class="team" aria-labelledby="titulo-equipe">
+      <div><span class="section-kicker">05 / IDENTIFICAÇÃO</span><h2 id="titulo-equipe">Integrantes do grupo</h2><p>Equipe responsável pelo desenvolvimento do Checkpoint 2 — Applied Computer Vision.</p></div>
+      <ul>
+        <li>MATHEUS FARIAS DE LIMA — RM 554254</li>
+        <li>MIGUEL MAURICIO PARRADO PATARROYO — RM 554007</li>
+        <li>VITOR PINHEIRO NASCIMENTO — RM 553693</li>
+        <li>GABRIEL LEÃO — RM 552642</li>
+        <li>PEDRO HENRIQUE NARDACI CHAVES — RM 553988</li>
+      </ul>
+    </section>
+  </main>
+  <footer class="footer"><div class="shell footer-inner"><span>APPLIED COMPUTER VISION • CHECKPOINT 2</span><span>Projeto acadêmico · FIAP · 2026</span></div></footer>
+</body>
+</html>
+ 
